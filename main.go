@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+
 	"github.com/h-yamada/vulca/app/handler"
 	. "github.com/h-yamada/vulca/config"
 
@@ -8,10 +10,8 @@ import (
 )
 
 func main() {
-	router := gin.Default()
 
-	Conf.CveDBPath = "./cve.sqlite3"
-	Conf.VulsDBPath = "./vuls.sqlite3"
+	router := gin.Default()
 
 	router.GET("/cve/:cveno", handler.CveDetail)
 	router.GET("/server/:server", handler.ServerCveList)
@@ -19,4 +19,10 @@ func main() {
 	router.GET("/scanlist", handler.ScanList)
 
 	router.Run(":8000")
+}
+
+func init() {
+	flag.StringVar(&Conf.CveDBPath, "cve-db-path", "./cve.sqlite3", "cve-db-path")
+	flag.StringVar(&Conf.VulsDBPath, "vuls-db-path", "./vuls.sqlite3", "vuls-db-path")
+	flag.Parse()
 }
