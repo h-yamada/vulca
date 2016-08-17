@@ -25,6 +25,7 @@ func CveDetail(c *gin.Context) {
 
 	if err := cvedb.OpenDB(); err != nil {
 		c.String(http.StatusInternalServerError, "go-cve-dictionary:OpenDB Error")
+		return
 	}
 	cveData := cvedb.Get(cveno)
 	c.JSON(http.StatusOK, cveData)
@@ -36,6 +37,7 @@ func ServerCveList(c *gin.Context) {
 	db, err := gorm.Open("sqlite3", Conf.VulsDBPath)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "OpenDB Error")
+		return
 	}
 
 	server := c.Param("server")
@@ -45,6 +47,7 @@ func ServerCveList(c *gin.Context) {
 
 	if scanHistory.ID == 0 {
 		c.String(http.StatusOK, "Not Scan Data")
+		return
 	}
 
 	result := ScanResult{}
@@ -59,7 +62,11 @@ func ServerCveList(c *gin.Context) {
 		cveIDList[i] = cveDetail.CveID
 	}
 
-	c.JSON(http.StatusOK, cveIDList)
+	if len(cveIDList) > 0 {
+		c.JSON(http.StatusOK, cveIDList)
+	} else {
+		c.String(http.StatusOK, "%s don't have issue packages.", server)
+	}
 }
 
 func CveServerList(c *gin.Context) {
@@ -68,6 +75,7 @@ func CveServerList(c *gin.Context) {
 	db, err := gorm.Open("sqlite3", Conf.VulsDBPath)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "OpenDB Error")
+		return
 	}
 
 	cveno := c.Param("cveno")
@@ -76,6 +84,7 @@ func CveServerList(c *gin.Context) {
 	db.Order("scanned_at desc").First(&scanHistory)
 	if scanHistory.ID == 0 {
 		c.String(http.StatusOK, "No Scan Data")
+		return
 	}
 
 	serverList := make([]string, 0, 0)
@@ -92,7 +101,7 @@ func CveServerList(c *gin.Context) {
 	if len(serverList) > 0 {
 		c.JSON(http.StatusOK, serverList)
 	} else {
-		c.String(http.StatusOK, "No Target Server")
+		c.String(http.StatusOK, "Not Found Server have issue")
 	}
 }
 
@@ -102,6 +111,7 @@ func ScanList(c *gin.Context) {
 	db, err := gorm.Open("sqlite3", Conf.VulsDBPath)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "OpenDB Error")
+		return
 	}
 
 	scanHistory := vulsm.ScanHistory{}
@@ -109,6 +119,7 @@ func ScanList(c *gin.Context) {
 
 	if scanHistory.ID == 0 {
 		c.String(http.StatusOK, "Not Scan Data")
+		return
 	}
 
 	results := []vulsm.ScanResult{}
