@@ -18,17 +18,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ApiResponse struct {
+	Status   int
+	Response interface{}
+}
+
+const (
+	AppStatusOK = iota
+	AppStatusError
+	AppStatusNotFuond
+)
+
 func CveDetail(c *gin.Context) {
 	cveno := c.Param("cveno")
 
 	cveconfig.Conf.DBPath = Conf.CveDBPath
 
 	if err := cvedb.OpenDB(); err != nil {
-		c.String(http.StatusInternalServerError, "go-cve-dictionary:OpenDB Error")
+		c.JSON(http.StatusInternalServerError, &ApiResponse{Status: AppStatusError, Response: Conf.CveDBPath + ":OpenDB Error"})
 		return
 	}
 	cveData := cvedb.Get(cveno)
-	c.JSON(http.StatusOK, cveData)
+	c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusOK, Response: cveData})
 }
 
 func ServerCveList(c *gin.Context) {
@@ -36,7 +47,7 @@ func ServerCveList(c *gin.Context) {
 
 	db, err := gorm.Open("sqlite3", Conf.VulsDBPath)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "OpenDB Error")
+		c.JSON(http.StatusInternalServerError, &ApiResponse{Status: AppStatusError, Response: Conf.VulsDBPath + ":OpenDB Error"})
 		return
 	}
 
@@ -46,7 +57,7 @@ func ServerCveList(c *gin.Context) {
 	db.Order("scanned_at desc").First(&scanHistory)
 
 	if scanHistory.ID == 0 {
-		c.String(http.StatusOK, "Not Scan Data")
+		c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusNotFuond, Response: "Not Scan Data"})
 		return
 	}
 
@@ -63,9 +74,9 @@ func ServerCveList(c *gin.Context) {
 	}
 
 	if len(cveIDList) > 0 {
-		c.JSON(http.StatusOK, cveIDList)
+		c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusOK, Response: cveIDList})
 	} else {
-		c.String(http.StatusOK, "%s don't have issue packages.", server)
+		c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusNotFuond, Response: server + " don't have issue packages."})
 	}
 }
 
@@ -74,7 +85,7 @@ func CveServerList(c *gin.Context) {
 
 	db, err := gorm.Open("sqlite3", Conf.VulsDBPath)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "OpenDB Error")
+		c.JSON(http.StatusInternalServerError, &ApiResponse{Status: AppStatusError, Response: Conf.VulsDBPath + ":OpenDB Error"})
 		return
 	}
 
@@ -83,7 +94,7 @@ func CveServerList(c *gin.Context) {
 	scanHistory := vulsm.ScanHistory{}
 	db.Order("scanned_at desc").First(&scanHistory)
 	if scanHistory.ID == 0 {
-		c.String(http.StatusOK, "No Scan Data")
+		c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusNotFuond, Response: "Not Scan Data"})
 		return
 	}
 
@@ -99,9 +110,9 @@ func CveServerList(c *gin.Context) {
 	}
 
 	if len(serverList) > 0 {
-		c.JSON(http.StatusOK, serverList)
+		c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusOK, Response: serverList})
 	} else {
-		c.String(http.StatusOK, "Not Found Server have issue")
+		c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusNotFuond, Response: "Not Found Server have issue"})
 	}
 }
 
@@ -110,7 +121,7 @@ func ScanList(c *gin.Context) {
 
 	db, err := gorm.Open("sqlite3", Conf.VulsDBPath)
 	if err != nil {
-		c.String(http.StatusInternalServerError, "OpenDB Error")
+		c.JSON(http.StatusInternalServerError, &ApiResponse{Status: AppStatusError, Response: Conf.VulsDBPath + ":OpenDB Error"})
 		return
 	}
 
@@ -118,7 +129,7 @@ func ScanList(c *gin.Context) {
 	db.Order("scanned_at desc").First(&scanHistory)
 
 	if scanHistory.ID == 0 {
-		c.String(http.StatusOK, "Not Scan Data")
+		c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusNotFuond, Response: "Not Scan Data"})
 		return
 	}
 
@@ -130,5 +141,5 @@ func ScanList(c *gin.Context) {
 		serverList[i] = result.ServerName
 	}
 
-	c.JSON(http.StatusOK, serverList)
+	c.JSON(http.StatusOK, &ApiResponse{Status: AppStatusOK, Response: serverList})
 }
